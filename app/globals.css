@@ -1,0 +1,526 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Change Theme based on holidays */
+/* Default Variables */
+:root {
+  /* Titles */
+  --shiny-color: #00ccff;
+  --shiny-color-light: #cef5ff;
+
+  /* sub-titles */
+  --primary-main-color: 193 100% 50%;
+
+  /* Card itself */
+  --card-main-bg: 222.2 50% 10%;
+
+  /* Skills card */
+  --skills-card-bg: #0C1426;
+
+  --custom-cursor: url('/cursorImg/IceCream.ico') 16 16, auto
+}
+
+.custom-cursor {
+  cursor: var(--custom-cursor);
+}
+
+
+@layer base {
+  .dark {
+    --background: 0 0% 0%;
+    --foreground: 210 40% 98%;
+    --card: var(--card-main-bg); /* Change the background of the card based on holiday */
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 50% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: var(--primary-main-color); /* Sub titles Color change based on holiday */
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 80.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --radius: .5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    position: relative;
+    overflow-x: hidden;
+  }
+}
+
+/* Space Background */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -2;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(15, 25, 45, 0.6) 0%, transparent 80%),
+    radial-gradient(ellipse at bottom +1px, #1B2735 0%, #090A0F 100%);
+  background-color: #090A0F;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
+
+
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  opacity: 0.5;
+  animation: twinkle var(--duration) ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+
+.nav-indicator {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 1rem;
+  height: 1px;
+  width: 2rem;
+  background-color: #64748b;
+  transition: all 0.15s ease-in-out;
+}
+
+.group:hover .nav-indicator,
+.group:focus-within .nav-indicator {
+  width: 4rem;
+  height: 2px;
+  background-color: #0d1426;
+}
+
+.nav-indicator.active,
+.group .nav-indicator.active {
+  width: 4rem;
+  height: 2px;
+  background-color: #0d1426;
+}
+
+.dark .group:hover .nav-indicator,
+.dark .group:focus-within .nav-indicator {
+  background-color: #e2e8f0;
+}
+
+.dark .nav-indicator.active,
+.dark .group .nav-indicator.active {
+  background-color: #e2e8f0;
+}
+
+.shiny {
+  font-weight: bold;
+  background: linear-gradient(90deg, var(--shiny-color), var(--shiny-color-light), var(--shiny-color));
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: shine 6s linear infinite;
+}
+
+.pinned-border-animation {
+  position: relative;
+  z-index: 0;
+}
+
+.pinned-border-animation::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  background: conic-gradient(from var(--rotation), var(--shiny-color), var(--shiny-color-light), var(--shiny-color));
+  border-radius: inherit;
+  animation: rotate-border 4s linear infinite;
+}
+
+.pinned-border-animation::after {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  background: inherit;
+  border-radius: inherit;
+  background-color: hsl(var(--card));
+}
+
+.pinned-badge-border-animation {
+  position: relative;
+  z-index: 0;
+}
+
+.pinned-badge-border-animation::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  background: conic-gradient(from var(--rotation), var(--shiny-color), var(--shiny-color-light), var(--shiny-color));
+  border-radius: inherit;
+  animation: rotate-border 4s linear infinite;
+}
+
+.pinned-badge-border-animation::after {
+  content: "";
+  position: absolute;
+  inset: 0px;
+  z-index: -1;
+  background: inherit;
+  border-radius: inherit;
+  background-color: inherit;
+}
+
+@property --rotation {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes rotate-border {
+  from { --rotation: 0deg; }
+  to { --rotation: 360deg; }
+}
+
+@keyframes shine {
+  0% {
+    background-position: 200% center;
+  }
+
+  100% {
+    background-position: -200% center;
+  }
+}
+
+
+/* Animated cube button */
+.cube-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.cube-button .cube {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  transform-style: preserve-3d;
+  animation: rotate 8s infinite linear;
+  transition: transform 0.6s cubic-bezier(0.34, 1.5, 0.65, 1);
+}
+
+.cube-button.opened .cube {
+  animation-play-state: paused;
+  transform: rotateX(-20deg) rotateY(20deg) scale(1.2);
+}
+
+.cube-button .face {
+  position: absolute;
+  width: inherit;
+  height: inherit;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: white;
+  transition: transform 0.6s cubic-bezier(0.34, 1.5, 0.65, 1), opacity 0.3s ease;
+}
+
+.cube-button.opened .front { transform: translateZ(20px); }
+.cube-button.opened .back { transform: rotateY(180deg) translateZ(20px); }
+.cube-button.opened .right { transform: rotateY(90deg) translateZ(20px); }
+.cube-button.opened .left { transform: rotateY(-90deg) translateZ(20px); }
+.cube-button.opened .top { transform: rotateX(90deg) translateZ(20px); }
+.cube-button.opened .bottom { transform: rotateX(-90deg) translateZ(20px); }
+
+.cube-button .front { transform: translateZ(10px); }
+.cube-button .back { transform: rotateY(180deg) translateZ(10px); }
+.cube-button .right { transform: rotateY(90deg) translateZ(10px); }
+.cube-button .left { transform: rotateY(-90deg) translateZ(10px); }
+.cube-button .top { transform: rotateX(90deg) translateZ(10px); }
+.cube-button .bottom { transform: rotateX(-90deg) translateZ(10px); }
+
+.blog-card-3d-wrapper {
+  perspective: 2200px;
+}
+
+.blog-card-3d {
+  transform-style: preserve-3d;
+  transform-origin: center center;
+  will-change: transform;
+  transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+}
+
+.blog-card-3d-wrapper:hover .blog-card-3d,
+.blog-card-3d:hover {
+  transform: translateZ(0) rotateX(8deg) rotateY(-8deg);
+}
+
+@keyframes rotate {
+  0% { transform: rotateX(0deg) rotateY(0deg); }
+  100% { transform: rotateX(360deg) rotateY(360deg); }
+}
+
+@property --profile-border-progress {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.profile-catch-wrapper {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-image-ring {
+  --profile-border-progress: 0deg;
+
+  position: relative;
+  width: 5.25rem;
+  height: 5.25rem;
+  flex-shrink: 0;
+  border-radius: 100%;
+  padding: 3px;
+  cursor: pointer;
+  isolation: isolate;
+
+  background:
+    conic-gradient(
+      from -90deg,
+      var(--shiny-color) 0deg,
+      var(--shiny-color-light) var(--profile-border-progress),
+      rgba(100, 116, 139, 0.35) var(--profile-border-progress),
+      rgba(100, 116, 139, 0.35) 360deg
+    );
+
+  transition:
+    --profile-border-progress 1200ms ease,
+    transform 300ms ease,
+    box-shadow 300ms ease;
+}
+
+/* Controlled by React instead of raw :hover */
+.profile-image-ring-charging:not(.profile-image-ring-evolved) {
+  --profile-border-progress: 360deg;
+  box-shadow:
+    0 0 18px var(--shiny-color),
+    0 0 36px var(--shiny-color-light);
+}
+
+/* Final caught state: no hover replay */
+.profile-image-ring-evolved {
+  --profile-border-progress: 360deg;
+  cursor: default;
+
+  background:
+    conic-gradient(
+      from -90deg,
+      var(--shiny-color) 0deg,
+      var(--shiny-color-light) 180deg,
+      var(--shiny-color) 360deg
+    );
+
+  animation: profile-caught-pop 550ms ease both;
+  box-shadow:
+    0 0 18px var(--shiny-color),
+    0 0 36px var(--shiny-color-light);
+}
+
+.profile-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  object-fit: contain;
+  background-color: #090a0f;
+  border: 2px solid rgba(9, 10, 15, 0.95);
+  user-select: none;
+
+  transition:
+    opacity 300ms ease,
+    transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    filter 500ms ease;
+}
+
+.profile-image-pokeball {
+  padding: 3px;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(255, 255, 255, 0.08),
+      rgba(9, 10, 15, 0.95)
+    );
+}
+
+.profile-image-pokemon {
+  padding: 3px;
+  animation: pokemon-reveal 550ms ease both;
+  filter:
+    drop-shadow(0 0 8px var(--shiny-color))
+    drop-shadow(0 0 18px var(--shiny-color-light));
+}
+
+.profile-loading-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 999px;
+  background: var(--shiny-color-light);
+  box-shadow:
+    0 0 8px var(--shiny-color-light),
+    0 0 16px var(--shiny-color);
+  animation: profile-loading-pulse 800ms ease-in-out infinite;
+  z-index: -1;
+}
+
+.profile-catch-label {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--shiny-color-light);
+  text-shadow:
+    0 0 8px var(--shiny-color),
+    0 0 16px var(--shiny-color-light);
+
+  animation: catch-label-in 350ms ease both;
+}
+
+.profile-catch-error {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 12rem;
+  pointer-events: none;
+
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fca5a5;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.35);
+}
+
+@keyframes profile-caught-pop {
+  0% {
+    transform: scale(1);
+  }
+
+  35% {
+    transform: scale(1.2) rotate(4deg);
+  }
+
+  65% {
+    transform: scale(0.95) rotate(-3deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes pokemon-reveal {
+  0% {
+    opacity: 0;
+    transform: scale(0.45) rotate(-10deg);
+    filter: brightness(2) blur(5px);
+  }
+
+  55% {
+    opacity: 1;
+    transform: scale(1.18) rotate(3deg);
+    filter: brightness(1.4) blur(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+    filter:
+      drop-shadow(0 0 8px var(--shiny-color))
+      drop-shadow(0 0 18px var(--shiny-color-light));
+  }
+}
+
+@keyframes profile-loading-pulse {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.55;
+  }
+
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes catch-label-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+
+/* ----------------------------- */
+/* Poké Ball shake animation     */
+/* ----------------------------- */
+
+@keyframes pokeball-shake {
+  0%   { transform: rotate(0deg) translateX(0); }
+  15%  { transform: rotate(-8deg) translateX(-2px); }
+  30%  { transform: rotate(8deg) translateX(2px); }
+  45%  { transform: rotate(-6deg) translateX(-2px); }
+  60%  { transform: rotate(6deg) translateX(2px); }
+  75%  { transform: rotate(-3deg) translateX(-1px); }
+  90%  { transform: rotate(3deg) translateX(1px); }
+  100% { transform: rotate(0deg) translateX(0); }
+}
+
+.profile-image-ring-charging:not(.profile-image-ring-evolved):hover {
+  animation: pokeball-shake 0.6s ease-in-out infinite;
+}
