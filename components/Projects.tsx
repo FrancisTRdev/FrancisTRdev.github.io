@@ -69,7 +69,7 @@ const jobProjects: ProjectItem[] = [
     imagePath: "/ClassifierAI.png",
     title: "ClassifierAI",
     type: "Personal Project",
-    stars: "https://flat.badgen.net/github/stars/FrancisTR/ClassifierAI",
+    stars: "https://flat.badgen.net/github/stars/FrancisTRdev/ClassifierAI",
     description:
       `A Chrome extension performing Image and Text Classification using Tensorflow.js. Automatically detects AI-generated articles on dev.to.`,
     skills: [
@@ -83,7 +83,7 @@ const jobProjects: ProjectItem[] = [
       "Docker",
       "Git",
     ],
-    repoLink: "https://github.com/FrancisTR/ClassifierAI",
+    repoLink: "https://github.com/FrancisTRdev/ClassifierAI",
     devtoLink: "https://dev.to/devengers/two-devs-and-a-copilot-created-classifierai-a-prototype-chrome-extension-that-automatically-4fge",
   },
 ];
