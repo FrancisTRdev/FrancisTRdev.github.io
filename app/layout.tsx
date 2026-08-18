@@ -6,7 +6,7 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { Analytics } from "@vercel/analytics/react";
 
 const inter = Inter({ subsets: ["latin"] });
-const siteUrl = "https://francistr.github.io";
+const siteUrl = "https://francistrdev.github.io";
 const defaultTitle = "Francis Tran";
 const defaultDescription =
   "Francis Tran is a software engineering student and full-stack developer building modern web apps, open-source products, and AI-powered experiences.";
@@ -20,7 +20,7 @@ const personSchema = {
   description: defaultDescription,
   alumniOf: "University of St. Thomas",
   sameAs: [
-    "https://github.com/FrancisTR",
+    "https://github.com/FrancisTRdev",
     "https://linkedin.com/in/francistran6832",
     "https://dev.to/francistrdev",
     "https://leetcode.com/u/FrancisTRdev/",
