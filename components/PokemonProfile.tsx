@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 
 type RandomPokemon = {
@@ -33,16 +33,15 @@ export default function PokemonProfile({
   hasProfileEvolved: boolean;
   onFetchPokemon: (pokemon: RandomPokemon | null, loading: boolean, error: string | null) => void;
 }) {
-  const [randomPokemon, setRandomPokemon] = useState<RandomPokemon | null>(null);
-  const [isPokemonLoading, setIsPokemonLoading] = useState(false);
-  const [pokemonError, setPokemonError] = useState<string | null>(null);
+  const randomPokemonRef = useRef<RandomPokemon | null>(null);
+  const hasProfileEvolvedRef = useRef(hasProfileEvolved);
+
+  hasProfileEvolvedRef.current = hasProfileEvolved;
 
   const fetchRandomPokemon = useCallback(async () => {
-    if (hasProfileEvolved || randomPokemon) return;
+    if (hasProfileEvolvedRef.current || randomPokemonRef.current) return;
 
     try {
-      setIsPokemonLoading(true);
-      setPokemonError(null);
       const randomId = getRandomPokemonId();
       const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`);
 
@@ -61,16 +60,13 @@ export default function PokemonProfile({
         name: formatPokemonName(data.name),
         image: pokemonImage,
       };
-      setRandomPokemon(pokemon);
+      randomPokemonRef.current = pokemon;
       onFetchPokemon(pokemon, false, null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "An error occurred";
-      setPokemonError(msg);
       onFetchPokemon(null, false, msg);
-    } finally {
-      setIsPokemonLoading(false);
     }
-  }, [hasProfileEvolved, randomPokemon, onFetchPokemon]);
+  }, [onFetchPokemon]);
 
   useEffect(() => {
     const handleTrigger = () => {
@@ -80,9 +76,5 @@ export default function PokemonProfile({
     return () => window.removeEventListener('trigger-pokemon-fetch', handleTrigger);
   }, [fetchRandomPokemon]);
 
-  return (
-    <div className="hidden">
-      {pokemonError && <span className="text-[10px] text-destructive">{pokemonError}</span>}
-    </div>
-  );
+  return null;
 }

@@ -313,6 +313,7 @@ body::before {
   padding: 3px;
   cursor: pointer;
   isolation: isolate;
+  will-change: transform;
 
   background:
     conic-gradient(
@@ -332,6 +333,7 @@ body::before {
 /* Controlled by React instead of raw :hover */
 .profile-image-ring-charging:not(.profile-image-ring-evolved) {
   --profile-border-progress: 360deg;
+  will-change: transform, box-shadow;
   box-shadow:
     0 0 18px var(--shiny-color),
     0 0 36px var(--shiny-color-light);
