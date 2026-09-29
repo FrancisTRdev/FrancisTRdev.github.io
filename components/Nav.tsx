@@ -248,7 +248,7 @@ const SOCIAL_LINKS: SocialLink[] = [
   },
 ];
 
-const EMAIL_HREF = "mailto:xst-tran6832@stthomas.edu";
+const EMAIL_HREF = "mailto:fatran@stthomas.edu";
 
 // ---------------------------------------------------------------------------
 // Component
