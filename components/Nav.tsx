@@ -229,7 +229,6 @@ function usePokemonCatch() {
 const NAV_ITEMS: NavItem[] = [
   { name: "Skills", href: "#skills" },
   { name: "Projects", href: "#projects" },
-  { name: "Experiences", href: "#experiences" },
   { name: "Blog", href: "#blog" },
 ];
 
@@ -254,13 +253,7 @@ const EMAIL_HREF = "mailto:fatran@stthomas.edu";
 // Component
 // ---------------------------------------------------------------------------
 
-export default function Nav({
-  showPicker,
-  setShowPicker,
-}: {
-  showPicker: boolean;
-  setShowPicker: (val: boolean) => void;
-}) {
+export default function Nav() {
   const activeSection = useActiveSection();
   const {
     isCharging,
@@ -393,33 +386,6 @@ export default function Nav({
             </li>
           ))}
 
-          <li>
-            <div
-              onClick={() => setShowPicker(!showPicker)}
-              aria-label="Toggle holiday theme selector"
-              className="group cursor-pointer"
-            >
-              <Button
-                variant="outline"
-                size="icon"
-                className="relative group flex items-center justify-center overflow-visible"
-              >
-                <div
-                  className={`cube-button ${showPicker ? "opened" : ""}`}
-                  aria-hidden="true"
-                >
-                  <div className="cube">
-                    <span className="face front">🎉</span>
-                    <span className="face back">🎄</span>
-                    <span className="face left">🍀</span>
-                    <span className="face top">🐣</span>
-                    <span className="face bottom">❤️</span>
-                    <span className="face right">🎃</span>
-                  </div>
-                </div>
-              </Button>
-            </div>
-          </li>
         </ul>
 
         <nav className="lg:block hidden mt-4">

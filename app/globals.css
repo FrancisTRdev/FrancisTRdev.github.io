@@ -2,8 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Change Theme based on holidays */
-/* Default Variables */
+/* Default theme */
 :root {
   /* Titles */
   --shiny-color: #00ccff;
@@ -18,11 +17,15 @@
   /* Skills card */
   --skills-card-bg: #0C1426;
 
-  --custom-cursor: url('/cursorImg/IceCream.ico') 16 16, auto
+  --custom-cursor: auto;
 }
 
 .custom-cursor {
   cursor: var(--custom-cursor);
+}
+
+.three-background {
+  display: block;
 }
 
 
@@ -30,11 +33,11 @@
   .dark {
     --background: 0 0% 0%;
     --foreground: 210 40% 98%;
-    --card: var(--card-main-bg); /* Change the background of the card based on holiday */
+    --card: var(--card-main-bg);
     --card-foreground: 210 40% 98%;
     --popover: 222.2 50% 10%;
     --popover-foreground: 210 40% 98%;
-    --primary: var(--primary-main-color); /* Sub titles Color change based on holiday */
+    --primary: var(--primary-main-color);
     --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -61,41 +64,18 @@
     position: relative;
     overflow-x: hidden;
   }
-}
 
-/* Space Background */
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -2;
-  background: 
-    radial-gradient(circle at 50% 50%, rgba(15, 25, 45, 0.6) 0%, transparent 80%),
-    radial-gradient(ellipse at bottom +1px, #1B2735 0%, #090A0F 100%);
-  background-color: #090A0F;
+  main,
+  nav {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 @layer base {
   * {
     @apply border-border;
   }
-}
-
-
-.star {
-  position: absolute;
-  background: white;
-  border-radius: 50%;
-  opacity: 0.5;
-  animation: twinkle var(--duration) ease-in-out infinite;
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
 }
 
 
@@ -213,60 +193,6 @@ body::before {
     background-position: -200% center;
   }
 }
-
-
-/* Animated cube button */
-.cube-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.cube-button .cube {
-  width: 20px;
-  height: 20px;
-  position: relative;
-  transform-style: preserve-3d;
-  animation: rotate 8s infinite linear;
-  transition: transform 0.6s cubic-bezier(0.34, 1.5, 0.65, 1);
-}
-
-.cube-button.opened .cube {
-  animation-play-state: paused;
-  transform: rotateX(-20deg) rotateY(20deg) scale(1.2);
-}
-
-.cube-button .face {
-  position: absolute;
-  width: inherit;
-  height: inherit;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  color: white;
-  transition: transform 0.6s cubic-bezier(0.34, 1.5, 0.65, 1), opacity 0.3s ease;
-}
-
-.cube-button.opened .front { transform: translateZ(20px); }
-.cube-button.opened .back { transform: rotateY(180deg) translateZ(20px); }
-.cube-button.opened .right { transform: rotateY(90deg) translateZ(20px); }
-.cube-button.opened .left { transform: rotateY(-90deg) translateZ(20px); }
-.cube-button.opened .top { transform: rotateX(90deg) translateZ(20px); }
-.cube-button.opened .bottom { transform: rotateX(-90deg) translateZ(20px); }
-
-.cube-button .front { transform: translateZ(10px); }
-.cube-button .back { transform: rotateY(180deg) translateZ(10px); }
-.cube-button .right { transform: rotateY(90deg) translateZ(10px); }
-.cube-button .left { transform: rotateY(-90deg) translateZ(10px); }
-.cube-button .top { transform: rotateX(90deg) translateZ(10px); }
-.cube-button .bottom { transform: rotateX(-90deg) translateZ(10px); }
-
 .blog-card-3d-wrapper {
   perspective: 2200px;
 }
@@ -281,11 +207,6 @@ body::before {
 .blog-card-3d-wrapper:hover .blog-card-3d,
 .blog-card-3d:hover {
   transform: translateZ(0) rotateX(8deg) rotateY(-8deg);
-}
-
-@keyframes rotate {
-  0% { transform: rotateX(0deg) rotateY(0deg); }
-  100% { transform: rotateX(360deg) rotateY(360deg); }
 }
 
 @property --profile-border-progress {

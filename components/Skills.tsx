@@ -16,7 +16,7 @@ const SCROLL_VELOCITY_CLAMP = 1;
 const ANGULAR_VELOCITY_JITTER = 0.02;
 const MIN_DIMENSION = 10;
 const SCROLL_SHAKE_THROTTLE = 16; // ~60fps throttling (ms)
-const OPTIMAL_PIXEL_RATIO = 1.5; // Balance between clarity and performance
+const OPTIMAL_PIXEL_RATIO = 1; // Keep the many physics canvases inexpensive during page scrolling
 const MOBILE_BREAKPOINT = 768;
 const RESIZE_DEBOUNCE = 150;
 
@@ -194,14 +194,28 @@ function setupScrollPassThrough(canvas: HTMLCanvasElement) {
 function setupScrollShake(
   Body: MatterModule['Body'],
   balls: Matter.Body[],
-  cfg: ResolvedPhysicsConfig
+  cfg: ResolvedPhysicsConfig,
+  pauseRunner: () => void,
+  resumeRunner: () => void
 ) {
   let lastY = window.scrollY;
   let lastT = performance.now();
   let lastShakeT = performance.now();
+  let resumeTimeout: ReturnType<typeof setTimeout> | null = null;
+  let isPaused = false;
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const onScroll = () => {
+    if (!isPaused) {
+      pauseRunner();
+      isPaused = true;
+    }
+    if (resumeTimeout) clearTimeout(resumeTimeout);
+    resumeTimeout = setTimeout(() => {
+      isPaused = false;
+      resumeRunner();
+    }, 140);
+
     if (prefersReducedMotion) return;
 
     const now = performance.now();
@@ -232,6 +246,7 @@ function setupScrollShake(
   return () => {
     window.removeEventListener('scroll', onScroll);
     window.removeEventListener('wheel', onScroll);
+    if (resumeTimeout) clearTimeout(resumeTimeout);
   };
 }
 
@@ -296,7 +311,19 @@ function PhysicsCanvas({
       const balls = createBalls(cfg, Bodies, Composite, engine.world, width, height);
 
       teardownScrollPassThrough = setupScrollPassThrough(render.canvas);
-      teardownScrollShake = setupScrollShake(Body, balls, cfg);
+      teardownScrollShake = setupScrollShake(
+        Body,
+        balls,
+        cfg,
+        () => {
+          Runner.stop(runner);
+          Render.stop(render);
+        },
+        () => {
+          Runner.run(runner, engine);
+          Render.run(render);
+        },
+      );
 
       // Clamp every tick so no ball can escape the bounding box.
       Events.on(engine, 'afterUpdate', () => {
