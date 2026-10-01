@@ -6,11 +6,13 @@ type RandomPokemon = {
   id: number;
   name: string;
   image: string;
+  rarity: "common" | "uncommon" | "rare" | "legendary";
 };
 
 const MAX_POKEMON_ID = 1025;
+const SKILL_COUNT = 12;
 const pokemonCache = new Map<number, RandomPokemon>();
-let pokemonRequest: Promise<RandomPokemon> | null = null;
+let pokemonRequest: Promise<RandomPokemon[]> | null = null;
 
 function formatPokemonName(name: string) {
   return name
@@ -28,19 +30,11 @@ function getRandomPokemonId() {
   return Math.floor(Math.random() * MAX_POKEMON_ID) + 1;
 }
 
-async function preloadPokemonImage(imageUrl: string) {
-  const image = new window.Image();
-  image.src = imageUrl;
-
-  if (image.decode) {
-    await image.decode();
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error("This Pokémon sprite could not be loaded."));
-  });
+function getPokemonRarity(baseExperience: number | null) {
+  if (baseExperience === null || baseExperience <= 100) return "common" as const;
+  if (baseExperience <= 200) return "uncommon" as const;
+  if (baseExperience <= 300) return "rare" as const;
+  return "legendary" as const;
 }
 
 async function fetchPokemon(signal: AbortSignal) {
@@ -48,11 +42,10 @@ async function fetchPokemon(signal: AbortSignal) {
   const cachedPokemon = pokemonCache.get(randomId);
   if (cachedPokemon) return cachedPokemon;
 
-  const response = await fetch(`https://pokeapi.co/api/v2/pokemon/${randomId}`, {
-    signal,
-    cache: "force-cache",
-  });
-
+  const response = await fetch(
+    `https://pokeapi.co/api/v2/pokemon/${randomId}`,
+    { signal, cache: "force-cache" },
+  );
   if (!response.ok) throw new Error("Failed to catch Pokémon.");
 
   const data = await response.json();
@@ -63,12 +56,11 @@ async function fetchPokemon(signal: AbortSignal) {
 
   if (!pokemonImage) throw new Error("This Pokémon has no available sprite.");
 
-  await preloadPokemonImage(pokemonImage);
-
   const pokemon = {
     id: data.id,
     name: formatPokemonName(data.name),
     image: pokemonImage,
+    rarity: getPokemonRarity(data.base_experience ?? null),
   };
   pokemonCache.set(randomId, pokemon);
   return pokemon;
@@ -79,9 +71,9 @@ export default function PokemonProfile({
   onFetchPokemon,
 }: {
   hasProfileEvolved: boolean;
-  onFetchPokemon: (pokemon: RandomPokemon | null, loading: boolean, error: string | null) => void;
+  onFetchPokemon: (pokemon: RandomPokemon[] | null, loading: boolean, error: string | null) => void;
 }) {
-  const randomPokemonRef = useRef<RandomPokemon | null>(null);
+  const randomPokemonRef = useRef<RandomPokemon[] | null>(null);
   const hasProfileEvolvedRef = useRef(hasProfileEvolved);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -95,7 +87,9 @@ export default function PokemonProfile({
     onFetchPokemon(null, true, null);
 
     try {
-      const request = pokemonRequest ?? fetchPokemon(abortController.signal);
+      const request = pokemonRequest ?? Promise.all(
+        Array.from({ length: SKILL_COUNT }, () => fetchPokemon(abortController.signal)),
+      );
       pokemonRequest = request;
       const pokemon = await request;
       pokemonRequest = null;

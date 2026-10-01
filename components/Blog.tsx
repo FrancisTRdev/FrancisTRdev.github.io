@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -47,17 +47,22 @@ const FALLBACK_IMAGE =
 
 function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<number | null>(null);
+  const pointerRef = useRef({ x: 0, y: 0 });
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || typeof window === 'undefined' || window.innerWidth < 768) return;
-    
-    requestAnimationFrame(() => {
+    pointerRef.current = { x: e.clientX, y: e.clientY };
+    if (frameRef.current !== null) return;
+
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
       if (!cardRef.current) return;
       const rect = cardRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const x = pointerRef.current.x - rect.left;
+      const y = pointerRef.current.y - rect.top;
       
       setMousePos({ x, y });
 
@@ -70,7 +75,12 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
   };
 
   const handleMouseLeave = () => {
-    requestAnimationFrame(() => {
+    if (frameRef.current !== null) {
+      cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
       setRotate({ x: 0, y: 0 });
       setMousePos({ x: 0, y: 0 });
     });
@@ -93,9 +103,9 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
           transition: "transform 0.1s ease-out",
           willChange: "transform",
           // Pass mouse position to children via CSS variables
-          ["--mouse-x" as any]: `${mousePos.x}px`,
-          ["--mouse-y" as any]: `${mousePos.y}px`,
-        }}
+          "--mouse-x": `${mousePos.x}px`,
+          "--mouse-y": `${mousePos.y}px`,
+        } as CSSProperties}
         className={className}
       >
         {children}
@@ -119,11 +129,10 @@ export default function Blog() {
 
       const url = new URL("https://dev.to/api/articles");
       url.searchParams.set("username", "francistrdev");
-      url.searchParams.set("per_page", "1000");
-      url.searchParams.set("t", String(Date.now()));
+      url.searchParams.set("per_page", "100");
 
       fetch(url.toString(), {
-        cache: "no-store",
+        cache: "default",
         signal: currentController.signal,
       })
         .then((res) => {
@@ -138,7 +147,7 @@ export default function Blog() {
         })
         .catch((err) => {
           if (isUnmounted) return;
-          if ((err as any)?.name === "AbortError") return;
+          if (err instanceof DOMException && err.name === "AbortError") return;
 
           console.error("Failed to fetch articles:", err);
           setError("Unable to load blog posts at the moment.");

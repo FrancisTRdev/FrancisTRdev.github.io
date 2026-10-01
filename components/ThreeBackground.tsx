@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 const TAU = Math.PI * 2;
-const STAR_COUNT = 1800;
+const STAR_COUNT = 1400;
 
 type StarLayer = {
   points: THREE.Points;
@@ -16,13 +16,14 @@ function randomBetween(min: number, max: number) {
 }
 
 function createStarLayer(count: number, depth: number, size: number, opacity: number): StarLayer {
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-  const twinkle = new Float32Array(count);
-  const phase = new Float32Array(count);
+  const particleCount = Math.max(0, Math.floor(count));
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  const twinkle = new Float32Array(particleCount);
+  const phase = new Float32Array(particleCount);
   const color = new THREE.Color();
 
-  for (let index = 0; index < count; index += 1) {
+  for (let index = 0; index < particleCount; index += 1) {
     const offset = index * 3;
     const radius = randomBetween(8, 31);
     const angle = Math.random() * TAU;
@@ -89,8 +90,11 @@ function createStarLayer(count: number, depth: number, size: number, opacity: nu
     vertexColors: true,
   });
 
+  const points = new THREE.Points(geometry, material);
+  points.frustumCulled = false;
+
   return {
-    points: new THREE.Points(geometry, material),
+    points,
     depth,
   };
 }
@@ -166,7 +170,7 @@ export default function ThreeBackground() {
 
     const renderer = new THREE.WebGLRenderer({
       canvas,
-      antialias: true,
+      antialias: false,
       alpha: false,
       powerPreference: "high-performance",
     });
@@ -174,9 +178,9 @@ export default function ThreeBackground() {
     renderer.setClearColor(0x02040f, 1);
 
     const starLayers = [
-      createStarLayer(STAR_COUNT * 0.35, 0.35, 0.035, 0.35),
-      createStarLayer(STAR_COUNT * 0.4, 0.65, 0.055, 0.58),
-      createStarLayer(STAR_COUNT * 0.25, 1, 0.085, 0.85),
+      createStarLayer(STAR_COUNT * 0.35, 0.35, 0.05, 0.42),
+      createStarLayer(STAR_COUNT * 0.4, 0.65, 0.075, 0.66),
+      createStarLayer(STAR_COUNT * 0.25, 1, 0.11, 0.92),
     ];
     starLayers.forEach(({ points }) => scene.add(points));
 
@@ -204,14 +208,21 @@ export default function ThreeBackground() {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
+      const width = Math.max(1, window.innerWidth);
+      const height = Math.max(1, window.innerHeight);
+      camera.aspect = width / height;
       camera.position.z = window.innerWidth < 768 ? 12 : 10;
       camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight, false);
+      renderer.setSize(width, height, false);
     };
     const onPointerMove = (event: PointerEvent) => {
-      pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-      pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      const width = Math.max(1, window.innerWidth);
+      const height = Math.max(1, window.innerHeight);
+      const x = (event.clientX / width) * 2 - 1;
+      const y = -(event.clientY / height) * 2 + 1;
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        pointer.set(x, y);
+      }
     };
     const onScroll = () => {
       scrollTarget = window.scrollY;
@@ -225,11 +236,13 @@ export default function ThreeBackground() {
     let frameId = 0;
     let isPageVisible = true;
     let previousTime = performance.now();
+    let renderAccumulator = 0;
     const animate = (now: number) => {
       if (!isPageVisible) return;
 
       const delta = Math.min((now - previousTime) / 1000, 0.05);
       previousTime = now;
+      renderAccumulator += delta;
       const time = now * 0.001;
       frameCounter += 1;
       target.lerp(pointer, 0.035);
@@ -267,7 +280,10 @@ export default function ThreeBackground() {
       camera.position.x += (target.x * 0.16 - camera.position.x) * 0.025;
       camera.position.y += (target.y * 0.1 + scrollPosition * 0.00035 - camera.position.y) * 0.025;
       camera.lookAt(0, 0, -3);
-      if (!isScrolling || frameCounter % 3 === 0) renderer.render(scene, camera);
+      if (renderAccumulator >= 1 / 30) {
+        renderer.render(scene, camera);
+        renderAccumulator = 0;
+      }
       frameId = requestAnimationFrame(animate);
     };
     const onVisibilityChange = () => {

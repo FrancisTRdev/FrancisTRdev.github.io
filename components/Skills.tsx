@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 
 // ---------------------------------------------------------------------------
@@ -46,6 +46,13 @@ type Skill = {
   src: string;
   palette: string[];
   options?: Omit<PhysicsConfig, 'colors'>;
+};
+
+type RevealedPokemon = {
+  id: number;
+  name: string;
+  image: string;
+  rarity: 'common' | 'uncommon' | 'rare' | 'legendary';
 };
 
 // ---------------------------------------------------------------------------
@@ -261,11 +268,13 @@ function PhysicsCanvas({
   logoAlt,
   config,
   className = 'aspect-square w-full',
+  logoClassName,
 }: {
   logoSrc: string;
   logoAlt: string;
   config: PhysicsConfig;
   className?: string;
+  logoClassName?: string;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -274,6 +283,10 @@ function PhysicsCanvas({
     let resizeObs: ResizeObserver | null = null;
     let teardownScrollShake: (() => void) | null = null;
     let teardownScrollPassThrough: (() => void) | null = null;
+    let teardownPausePhysics: (() => void) | null = null;
+    let teardownVisibility: (() => void) | null = null;
+    let teardownPhysics: (() => void) | null = null;
+    let teardownResize: (() => void) | null = null;
 
     (async () => {
       const el = containerRef.current;
@@ -311,18 +324,33 @@ function PhysicsCanvas({
       const balls = createBalls(cfg, Bodies, Composite, engine.world, width, height);
 
       teardownScrollPassThrough = setupScrollPassThrough(render.canvas);
+      let physicsPaused = false;
+      let isVisible = true;
+      const startPhysics = () => {
+        if (!physicsPaused && isVisible) {
+          Runner.run(runner, engine);
+          Render.run(render);
+        }
+      };
+      const stopPhysics = () => {
+        Runner.stop(runner);
+        Render.stop(render);
+      };
+      teardownPhysics = stopPhysics;
+      const pausePhysics = () => {
+        physicsPaused = true;
+        stopPhysics();
+      };
+      window.addEventListener('pause-skill-physics', pausePhysics);
+      teardownPausePhysics = () =>
+        window.removeEventListener('pause-skill-physics', pausePhysics);
+
       teardownScrollShake = setupScrollShake(
         Body,
         balls,
         cfg,
-        () => {
-          Runner.stop(runner);
-          Render.stop(render);
-        },
-        () => {
-          Runner.run(runner, engine);
-          Render.run(render);
-        },
+        stopPhysics,
+        startPhysics,
       );
 
       // Clamp every tick so no ball can escape the bounding box.
@@ -330,8 +358,18 @@ function PhysicsCanvas({
         for (const ball of balls) clampBallInside(Body, ball, width, height);
       });
 
-      Render.run(render);
-      Runner.run(runner, engine);
+      startPhysics();
+
+      const visibilityObserver = new IntersectionObserver(
+        ([entry]) => {
+          isVisible = entry.isIntersecting;
+          if (isVisible) startPhysics();
+          else stopPhysics();
+        },
+        { threshold: 0.01 },
+      );
+      visibilityObserver.observe(el);
+      teardownVisibility = () => visibilityObserver.disconnect();
 
       // Resize the scene (debounced) whenever the container changes size.
       let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -359,6 +397,9 @@ function PhysicsCanvas({
 
       resizeObs = new ResizeObserver(handleResize);
       resizeObs.observe(el);
+      teardownResize = () => {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+      };
     })();
 
     return () => {
@@ -366,12 +407,11 @@ function PhysicsCanvas({
       resizeObs?.disconnect();
       teardownScrollShake?.();
       teardownScrollPassThrough?.();
-
-      try {
-        containerRef.current?.querySelector('canvas')?.remove();
-      } catch {
-        // no-op
-      }
+      teardownPausePhysics?.();
+      teardownVisibility?.();
+      teardownResize?.();
+      teardownPhysics?.();
+      containerRef.current?.querySelector('canvas')?.remove();
     };
   }, [config]);
 
@@ -385,7 +425,8 @@ function PhysicsCanvas({
         alt={logoAlt}
         width={160}
         height={96}
-        className="pointer-events-none absolute inset-0 z-10 m-auto h-24 w-40 object-contain opacity-90 will-change-transform backface-visibility-hidden"
+        className={`pointer-events-none absolute inset-0 z-10 m-auto object-contain opacity-90 will-change-transform backface-visibility-hidden ${logoClassName ?? ''}`}
+        style={{ width: '60%', height: 'auto' }}
         loading="lazy"
       />
     </div>
@@ -422,14 +463,62 @@ const BASE_PHYSICS_CONFIG: Omit<PhysicsConfig, 'colors'> = {
   shakeForce: 0.002,
 };
 
+const SKILL_CONFIGS = SKILLS.map((skill) => ({
+  ...BASE_PHYSICS_CONFIG,
+  colors: skill.palette,
+  ...(skill.options ?? {}),
+}));
+
+const POKEMON_GLOW_COLORS: Record<RevealedPokemon['rarity'], string> = {
+  common: '#22c55e',
+  uncommon: '#38bdf8',
+  rare: '#a855f7',
+  legendary: '#f59e0b',
+};
+
 // ---------------------------------------------------------------------------
 // Component: Skills
 // ---------------------------------------------------------------------------
 
 export default function Skills() {
-  // useMemo keeps the array reference stable across renders; the palette
-  // data never changes, so this just avoids needless re-creation.
-  const skills = useMemo(() => SKILLS, []);
+  const skills = SKILLS;
+  const [visiblePokemon, setVisiblePokemon] = useState<RevealedPokemon[]>([]);
+  const [revealingIndex, setRevealingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    let revealTimer: ReturnType<typeof setTimeout> | null = null;
+    let nextTimer: ReturnType<typeof setTimeout> | null = null;
+    const onPokemonRevealed = (event: Event) => {
+      const pokemon = (event as CustomEvent<RevealedPokemon[]>).detail;
+      if (pokemon?.length !== SKILLS.length) return;
+
+      if (revealTimer) clearTimeout(revealTimer);
+      if (nextTimer) clearTimeout(nextTimer);
+      setVisiblePokemon([]);
+
+      const revealNext = (index: number) => {
+        if (index >= pokemon.length) {
+          setRevealingIndex(null);
+          return;
+        }
+
+        setRevealingIndex(index);
+        revealTimer = setTimeout(() => {
+          setVisiblePokemon((current) => [...current, pokemon[index]]);
+          nextTimer = setTimeout(() => revealNext(index + 1), 350);
+        }, 500);
+      };
+
+      revealNext(0);
+    };
+
+    window.addEventListener('pokemon-revealed', onPokemonRevealed);
+    return () => {
+      window.removeEventListener('pokemon-revealed', onPokemonRevealed);
+      if (revealTimer) clearTimeout(revealTimer);
+      if (nextTimer) clearTimeout(nextTimer);
+    };
+  }, []);
 
   return (
     <section id="skills" className="scroll-mt-16" data-section="skills">
@@ -443,18 +532,45 @@ export default function Skills() {
         <h2 className="shiny hidden text-3xl font-bold lg:block lg:text-start">Skills</h2>
       </div>
 
-      <ul role="list" className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:gap-6">
-        {skills.map((skill) => (
+      <div className="skills-pokemon-stage">
+        <ul role="list" className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:gap-6">
+        {skills.map((skill, index) => (
           <li
             key={skill.name}
-            className="rounded-xl border border-white/10 transition-shadow hover:shadow-md"
+            className={`relative rounded-xl border border-white/10 transition-shadow hover:shadow-md ${
+              revealingIndex === index || visiblePokemon[index]
+                ? "skills-card-revealing"
+                : ""
+            }`}
           >
             <PhysicsCanvas
               logoSrc={skill.src}
               logoAlt={`${skill.name} logo`}
-              config={{ ...BASE_PHYSICS_CONFIG, colors: skill.palette, ...(skill.options ?? {}) }}
+              config={SKILL_CONFIGS[index]}
               className="aspect-square w-full"
+              logoClassName="skills-card-logo"
             />
+
+            {visiblePokemon[index] && (
+              <div
+                className="skills-pokemon-overlay"
+                aria-label={`Revealed Pokémon: ${visiblePokemon[index].name}`}
+              >
+                <img
+                  src={visiblePokemon[index].image}
+                  alt={visiblePokemon[index].name}
+                  className="skills-pokemon-image"
+                  style={{
+                    '--pokemon-glow':
+                      POKEMON_GLOW_COLORS[visiblePokemon[index].rarity],
+                  } as React.CSSProperties}
+                  draggable={false}
+                />
+                <span className="skills-pokemon-tooltip">
+                  {visiblePokemon[index].name}
+                </span>
+              </div>
+            )}
 
             <div className="px-3 py-3 min-h-[3rem] flex items-center justify-center">
               <p className="text-center text-sm font-medium leading-tight break-words whitespace-normal">
@@ -463,7 +579,8 @@ export default function Skills() {
             </div>
           </li>
         ))}
-      </ul>
+        </ul>
+      </div>
     </section>
   );
 }

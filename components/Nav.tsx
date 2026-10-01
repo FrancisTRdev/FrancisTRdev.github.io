@@ -26,6 +26,7 @@ type Pokemon = {
   id: number;
   name: string;
   image?: string;
+  rarity?: "common" | "uncommon" | "rare" | "legendary";
 };
 
 type SocialLink = {
@@ -89,15 +90,16 @@ function usePokemonCatch() {
   const [isCharging, setIsCharging] = useState(false);
   const [hasCompletedProgress, setHasCompletedProgress] = useState(false);
   const [hasEvolved, setHasEvolved] = useState(false);
-  const [pokemon, setPokemon] = useState<Pokemon | null>(null);
+  const [pokemon, setPokemon] = useState<Pokemon[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const hasCompletedProgressRef = useRef(false);
   const hasEvolvedRef = useRef(false);
-  const pokemonRef = useRef<Pokemon | null>(null);
+  const pokemonRef = useRef<Pokemon[] | null>(null);
   const isLoadingRef = useRef(false);
   const hasRequestedRef = useRef(false);
+  const progressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     hasCompletedProgressRef.current = hasCompletedProgress;
@@ -128,7 +130,7 @@ function usePokemonCatch() {
     window.dispatchEvent(new CustomEvent("trigger-pokemon-fetch"));
   }, []);
 
-  const reveal = useCallback((candidate?: Pokemon | null) => {
+  const reveal = useCallback((candidate?: Pokemon[] | null) => {
     const target = candidate ?? pokemonRef.current;
     if (!target || hasEvolvedRef.current) return;
 
@@ -138,11 +140,17 @@ function usePokemonCatch() {
     setIsCharging(false);
     setIsLoading(false);
     setError(null);
+    if (progressTimerRef.current) {
+      clearTimeout(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
 
     pokemonRef.current = target;
     hasCompletedProgressRef.current = true;
     hasEvolvedRef.current = true;
     isLoadingRef.current = false;
+    window.dispatchEvent(new Event("pause-skill-physics"));
+    window.dispatchEvent(new CustomEvent("pokemon-revealed", { detail: target }));
   }, []);
 
   const onMouseEnter = useCallback(() => {
@@ -150,22 +158,32 @@ function usePokemonCatch() {
 
     setError(null);
     setIsCharging(true);
+    if (progressTimerRef.current) clearTimeout(progressTimerRef.current);
+    progressTimerRef.current = setTimeout(() => {
+      setHasCompletedProgress(true);
+      hasCompletedProgressRef.current = true;
+      if (pokemonRef.current) reveal(pokemonRef.current);
+    }, 1300);
 
     // Kick off the fetch as soon as hover starts so the Pokémon is
     // ready by the time the progress ring finishes charging.
     requestFetch();
-  }, [requestFetch]);
+  }, [requestFetch, reveal]);
 
   const onMouseLeave = useCallback(() => {
     // Once progress has completed, let the reveal flow finish on its own.
     if (hasEvolvedRef.current || hasCompletedProgressRef.current) return;
 
+    if (progressTimerRef.current) {
+      clearTimeout(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
     setIsCharging(false);
     setHasCompletedProgress(false);
   }, []);
 
   const onFetchResult = useCallback(
-    (result: Pokemon | null, loading: boolean, fetchError: string | null) => {
+    (result: Pokemon[] | null, loading: boolean, fetchError: string | null) => {
       setIsLoading(loading);
       setError(fetchError);
 
@@ -173,7 +191,7 @@ function usePokemonCatch() {
         hasRequestedRef.current = false;
       }
 
-      if (result) {
+      if (result?.length) {
         setPokemon(result);
         pokemonRef.current = result;
         hasRequestedRef.current = false;
@@ -190,10 +208,10 @@ function usePokemonCatch() {
   );
 
   const onTransitionEnd = useCallback(
-    (event: React.TransitionEvent<HTMLDivElement>) => {
+    (event: React.TransitionEvent<HTMLElement>) => {
       if (event.currentTarget !== event.target) return;
       if (
-        event.propertyName !== "--profile-border-progress" ||
+        event.propertyName !== "--pokemon-name-progress" ||
         hasEvolvedRef.current ||
         !isCharging
       ) {
@@ -202,6 +220,10 @@ function usePokemonCatch() {
 
       setHasCompletedProgress(true);
       hasCompletedProgressRef.current = true;
+      if (progressTimerRef.current) {
+        clearTimeout(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
 
       if (pokemonRef.current) {
         reveal(pokemonRef.current);
@@ -216,7 +238,6 @@ function usePokemonCatch() {
     isCharging,
     hasEvolved,
     pokemon,
-    isLoading,
     error,
     handlers: { onMouseEnter, onMouseLeave, onTransitionEnd, onFetchResult },
   };
@@ -259,7 +280,6 @@ export default function Nav() {
     isCharging,
     hasEvolved,
     pokemon,
-    isLoading,
     error,
     handlers,
   } = usePokemonCatch();
@@ -268,14 +288,10 @@ export default function Nav() {
     ? "bg-[linear-gradient(to_right,var(--shiny-color),var(--shiny-color))] bg-left-bottom bg-no-repeat bg-[length:100%_2px] drop-shadow-[0_0_6px_var(--shiny-color)] transition-[background-size,filter] duration-700 ease-out"
     : "bg-[linear-gradient(to_right,var(--shiny-color),var(--shiny-color))] bg-left-bottom bg-no-repeat bg-[length:0%_2px] transition-[background-size,filter] duration-700 ease-out";
 
-  const profileImageSrc = hasEvolved
-    ? pokemon?.image || "/GreatBall.png"
-    : "/GreatBall.png";
-
   const profileImageAlt =
     hasEvolved && pokemon
-      ? `Random Pokémon revealed: ${pokemon.name}`
-      : "Poké Ball. Hover until the progress bar fills to reveal a random Pokémon.";
+      ? `Random Pokémon revealed: ${pokemon.map(({ name }) => name).join(", ")}`
+      : "Hover the name until the progress bar fills to reveal a random Pokémon.";
 
   const getNavItemClasses = (href: string) => {
     const isActive = activeSection === href.substring(1);
@@ -296,43 +312,32 @@ export default function Nav() {
   return (
     <header className="lg:sticky lg:top-0 lg:flex lg:max-h-screen lg:w-1/2 lg:flex-col lg:justify-between lg:py-20 flex flex-col lg:gap-4">
       <div className="flex flex-col gap-4 lg:pr-20 mt-2 px-6 lg:px-0 items-center lg:items-start text-center lg:text-start">
-        <div className="flex w-full flex-col-reverse items-center justify-center gap-4 sm:w-auto lg:flex-row sm:gap-5 lg:justify-start">
-          <h1 className="text-center text-5xl font-bold leading-tight drop-shadow-[0_0_15px_rgba(0,204,255,0.5)] sm:text-4xl lg:text-start">
-            Francis Tran
+        <div className="relative flex w-full flex-col-reverse items-center justify-center gap-4 sm:w-auto lg:flex-row sm:gap-5 lg:justify-start">
+          <h1
+            className={`pokemon-name-target cursor-default text-center text-5xl font-bold leading-tight sm:text-4xl lg:text-start ${
+              isCharging ? "pokemon-name-charging" : ""
+            } ${hasEvolved ? "profile-name-evolved" : ""
+            }`}
+            aria-label="Francis Tran"
+            onMouseEnter={handlers.onMouseEnter}
+            onMouseLeave={handlers.onMouseLeave}
+            onTransitionEnd={handlers.onTransitionEnd}
+          >
+            {"Francis Tran".split("").map((letter, index) => (
+              <span
+                key={`${letter}-${index}`}
+                className={letter === " " ? "pokemon-name-space" : "pokemon-name-letter"}
+                aria-hidden="true"
+                style={{ "--letter-index": index } as React.CSSProperties}
+              >
+                {letter === " " ? "\u00a0" : letter}
+              </span>
+            ))}
           </h1>
 
-          <div className="profile-catch-wrapper">
-            <div
-              className={`profile-image-ring h-10 w-10 lg:h-[3.25rem] lg:w-[3.25rem] ${isCharging ? "profile-image-ring-charging" : ""
-                } ${hasEvolved ? "profile-image-ring-evolved" : ""}`}
-              aria-label={profileImageAlt}
-              onMouseEnter={handlers.onMouseEnter}
-              onMouseLeave={handlers.onMouseLeave}
-              onTransitionEnd={handlers.onTransitionEnd}
-            >
-              <img
-                src={profileImageSrc}
-                alt={profileImageAlt}
-                className={`profile-image ${hasEvolved ? "profile-image-pokemon" : "profile-image-pokeball"
-                  }`}
-                draggable={false}
-              />
-
-              {!hasEvolved && isLoading && (
-                <span className="profile-loading-dot" aria-hidden="true" />
-              )}
-            </div>
-
-            {hasEvolved && pokemon && (
-              <span className="profile-catch-label">
-                #{pokemon.id} {pokemon.name}
-              </span>
-            )}
-
-            {!hasEvolved && error && (
-              <span className="profile-catch-error">{error}</span>
-            )}
-          </div>
+          {error && !hasEvolved && (
+            <span className="profile-catch-error">{error}</span>
+          )}
 
           <PokemonProfile
             hasProfileEvolved={hasEvolved}

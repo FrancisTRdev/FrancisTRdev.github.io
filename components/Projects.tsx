@@ -104,7 +104,7 @@ export default function Projects() {
       <>
         {jobProjects.map((project, index) => (
           <Card
-            key={index}
+            key={project.title}
             className="relative overflow-hidden border border-border/60 bg-card/70 backdrop-blur shadow-md transition-all duration-200 focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 group p-4 sm:p-6 mb-10 flex flex-col lg:flex-row w-full min-h-fit gap-6 lg:gap-8"
           >
             <div className="h-full w-full lg:w-1/3 mb-4 p-0 overflow-hidden rounded-lg flex justify-center max-w-sm mx-auto lg:max-w-none lg:mx-0">
@@ -113,7 +113,7 @@ export default function Projects() {
                 alt={`Screenshot of ${project.title}`}
                 width={640}
                 height={360}
-                priority
+                priority={index === 0}
                 className="bg-[#141414] mt-2 border border-muted-foreground/20 rounded-lg overflow-hidden mx-auto will-change-transform backface-visibility-hidden"
               />
             </div>
@@ -177,8 +177,8 @@ export default function Projects() {
                 </div>
               </CardContent>
               <CardFooter className="p-0 flex flex-wrap gap-2 pt-6">
-                {project.skills.map((skill, index) => (
-                  <Badge key={index} variant="secondary">{skill}</Badge>
+                {project.skills.map((skill) => (
+                <Badge key={skill} variant="secondary">{skill}</Badge>
                 ))}
               </CardFooter>
             </div>
