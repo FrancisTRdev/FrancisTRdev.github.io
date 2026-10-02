@@ -30,11 +30,22 @@ function getRandomPokemonId() {
   return Math.floor(Math.random() * MAX_POKEMON_ID) + 1;
 }
 
-function getPokemonRarity(baseExperience: number | null) {
+async function getPokemonRarity(
+  speciesUrl: string | undefined,
+  baseExperience: number | null,
+  signal: AbortSignal,
+) {
+  if (speciesUrl) {
+    const response = await fetch(speciesUrl, { signal, cache: "force-cache" });
+    if (response.ok) {
+      const species = await response.json();
+      if (species.is_mythical || species.is_legendary) return "legendary" as const;
+    }
+  }
+
   if (baseExperience === null || baseExperience <= 100) return "common" as const;
   if (baseExperience <= 200) return "uncommon" as const;
-  if (baseExperience <= 300) return "rare" as const;
-  return "legendary" as const;
+  return "rare" as const;
 }
 
 async function fetchPokemon(signal: AbortSignal) {
@@ -50,9 +61,8 @@ async function fetchPokemon(signal: AbortSignal) {
 
   const data = await response.json();
   const pokemonImage =
-    data.sprites?.other?.["official-artwork"]?.front_default ||
-    data.sprites?.other?.home?.front_default ||
-    data.sprites?.front_default;
+    data.sprites?.front_default ||
+    data.sprites?.front_shiny;
 
   if (!pokemonImage) throw new Error("This Pokémon has no available sprite.");
 
@@ -60,7 +70,11 @@ async function fetchPokemon(signal: AbortSignal) {
     id: data.id,
     name: formatPokemonName(data.name),
     image: pokemonImage,
-    rarity: getPokemonRarity(data.base_experience ?? null),
+    rarity: await getPokemonRarity(
+      data.species?.url,
+      data.base_experience ?? null,
+      signal,
+    ),
   };
   pokemonCache.set(randomId, pokemon);
   return pokemon;

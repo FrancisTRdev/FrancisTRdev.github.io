@@ -475,6 +475,8 @@ const POKEMON_GLOW_COLORS: Record<RevealedPokemon['rarity'], string> = {
   rare: '#a855f7',
   legendary: '#f59e0b',
 };
+const EXPERIENCE_BALL_IMAGES = ['/Pokeball.png', '/GreatBall.png'];
+const MASTERBALL_IMAGE = '/Masterball.png';
 
 // ---------------------------------------------------------------------------
 // Component: Skills
@@ -483,6 +485,7 @@ const POKEMON_GLOW_COLORS: Record<RevealedPokemon['rarity'], string> = {
 export default function Skills() {
   const [revealedPokemon, setRevealedPokemon] = useState<RevealedPokemon[]>([]);
   const [visiblePokemon, setVisiblePokemon] = useState<RevealedPokemon[]>([]);
+  const [fallbackBallImages, setFallbackBallImages] = useState<string[]>([]);
   const [revealingIndex, setRevealingIndex] = useState<number | null>(null);
   const [loadedPokemonIds, setLoadedPokemonIds] = useState<Set<number>>(
     () => new Set(),
@@ -503,6 +506,16 @@ export default function Skills() {
       if (nextTimer) clearTimeout(nextTimer);
       setRevealedPokemon(pokemon);
       setVisiblePokemon([]);
+      setFallbackBallImages(
+        pokemon.map(
+          ({ rarity }) =>
+            rarity === 'legendary'
+              ? MASTERBALL_IMAGE
+              : EXPERIENCE_BALL_IMAGES[
+                  Math.floor(Math.random() * EXPERIENCE_BALL_IMAGES.length)
+                ],
+        ),
+      );
       setLoadedPokemonIds(new Set());
       setBreakingPokemonIds(new Set());
       revealTimersRef.current.forEach((timer) => clearTimeout(timer));
@@ -597,16 +610,20 @@ export default function Skills() {
               >
                 {visiblePokemon[index] &&
                 loadedPokemonIds.has(visiblePokemon[index].id) ? (
-                  <img
-                    src={visiblePokemon[index].image}
-                    alt={`${visiblePokemon[index].name} reveal`}
-                    className="skills-pokemon-image"
+                  <div
+                    className="skills-pokemon-glow"
                     style={{
                       '--pokemon-glow':
                         POKEMON_GLOW_COLORS[visiblePokemon[index].rarity],
                     } as React.CSSProperties}
-                    draggable={false}
-                  />
+                  >
+                    <img
+                      src={visiblePokemon[index].image}
+                      alt={`${visiblePokemon[index].name} reveal`}
+                      className="skills-pokemon-image"
+                      draggable={false}
+                    />
+                  </div>
                 ) : (
                   <div
                     className={`skills-pokeball-break ${
@@ -619,13 +636,13 @@ export default function Skills() {
                     aria-label="Poké Ball"
                   >
                     <img
-                      src="/GreatBall.png"
+                      src={fallbackBallImages[index] ?? '/GreatBall.png'}
                       alt=""
                       className="skills-pokeball-half skills-pokeball-half-left"
                       draggable={false}
                     />
                     <img
-                      src="/GreatBall.png"
+                      src={fallbackBallImages[index] ?? '/GreatBall.png'}
                       alt=""
                       className="skills-pokeball-half skills-pokeball-half-right"
                       draggable={false}

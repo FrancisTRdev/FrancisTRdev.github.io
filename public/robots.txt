@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://francistr.github.io/sitemap.xml
+Sitemap: https://francistrdev.github.io/sitemap.xml
