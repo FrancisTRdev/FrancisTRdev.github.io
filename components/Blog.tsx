@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
   Card,
@@ -45,32 +45,38 @@ const PINNED_TITLES: Record<string, string> = {
 const FALLBACK_IMAGE =
   "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzg0MCIgaGVpZ2h0PSIyMTYwIiB2aWV3Qm94PSIwIDAgMzg0MCAyMTYwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMzg0MCIgaGVpZ2h0PSIyMTYwIiBmaWxsPSIjMTQxNDE0Ii8+Cjx0ZXh0IHg9IjE5MjAiIHk9IjExODAiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM2YjcyODAiIGZvbnQtc2l6ZT0iOTYiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmaWxsLW9wYWNpdHk9IjAuNSI+Tm8gSW1hZ2U8L3RleHQ+Cjwvc3ZnPg==";
 
-function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
+function TiltCard({ children, className }: { children: ReactNode; className?: string }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const pointerRef = useRef({ x: 0, y: 0 });
-  const [rotate, setRotate] = useState({ x: 0, y: 0 });
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current || typeof window === 'undefined' || window.innerWidth < 768) return;
+    if (
+      !cardRef.current ||
+      !contentRef.current ||
+      typeof window === "undefined" ||
+      window.innerWidth < 768
+    ) {
+      return;
+    }
     pointerRef.current = { x: e.clientX, y: e.clientY };
     if (frameRef.current !== null) return;
 
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
-      if (!cardRef.current) return;
+      if (!cardRef.current || !contentRef.current) return;
       const rect = cardRef.current.getBoundingClientRect();
       const x = pointerRef.current.x - rect.left;
       const y = pointerRef.current.y - rect.top;
-      
-      setMousePos({ x, y });
 
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      const rotateX = (centerY - y) / centerY * 5; 
-      const rotateY = (x - centerX) / centerX * 5;
-      setRotate({ x: rotateX, y: rotateY });
+      const rotateX = ((centerY - y) / centerY) * 5;
+      const rotateY = ((x - centerX) / centerX) * 5;
+      contentRef.current.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+      contentRef.current.style.setProperty("--mouse-x", `${x}px`);
+      contentRef.current.style.setProperty("--mouse-y", `${y}px`);
     });
   };
 
@@ -81,8 +87,10 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
     }
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
-      setRotate({ x: 0, y: 0 });
-      setMousePos({ x: 0, y: 0 });
+      if (!contentRef.current) return;
+      contentRef.current.style.transform = "rotateX(0deg) rotateY(0deg)";
+      contentRef.current.style.setProperty("--mouse-x", "0px");
+      contentRef.current.style.setProperty("--mouse-y", "0px");
     });
   };
 
@@ -98,14 +106,11 @@ function TiltCard({ children, className }: { children: React.ReactNode; classNam
       className="w-full"
     >
       <div 
+        ref={contentRef}
         style={{ 
-          transform: `rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transition: "transform 0.1s ease-out",
           willChange: "transform",
-          // Pass mouse position to children via CSS variables
-          "--mouse-x": `${mousePos.x}px`,
-          "--mouse-y": `${mousePos.y}px`,
-        } as CSSProperties}
+        }}
         className={className}
       >
         {children}

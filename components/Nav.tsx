@@ -65,7 +65,11 @@ function useActiveSection() {
           }
         }
 
-        if (current) setActiveSection(current);
+        if (current) {
+          setActiveSection((previous) =>
+            previous === current ? previous : current,
+          );
+        }
         ticking = false;
       });
     };

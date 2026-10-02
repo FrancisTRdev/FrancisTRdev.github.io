@@ -481,9 +481,16 @@ const POKEMON_GLOW_COLORS: Record<RevealedPokemon['rarity'], string> = {
 // ---------------------------------------------------------------------------
 
 export default function Skills() {
-  const skills = SKILLS;
+  const [revealedPokemon, setRevealedPokemon] = useState<RevealedPokemon[]>([]);
   const [visiblePokemon, setVisiblePokemon] = useState<RevealedPokemon[]>([]);
   const [revealingIndex, setRevealingIndex] = useState<number | null>(null);
+  const [loadedPokemonIds, setLoadedPokemonIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const [breakingPokemonIds, setBreakingPokemonIds] = useState<Set<number>>(
+    () => new Set(),
+  );
+  const revealTimersRef = useRef(new Map<number, ReturnType<typeof setTimeout>>());
 
   useEffect(() => {
     let revealTimer: ReturnType<typeof setTimeout> | null = null;
@@ -494,7 +501,12 @@ export default function Skills() {
 
       if (revealTimer) clearTimeout(revealTimer);
       if (nextTimer) clearTimeout(nextTimer);
+      setRevealedPokemon(pokemon);
       setVisiblePokemon([]);
+      setLoadedPokemonIds(new Set());
+      setBreakingPokemonIds(new Set());
+      revealTimersRef.current.forEach((timer) => clearTimeout(timer));
+      revealTimersRef.current.clear();
 
       const revealNext = (index: number) => {
         if (index >= pokemon.length) {
@@ -517,8 +529,32 @@ export default function Skills() {
       window.removeEventListener('pokemon-revealed', onPokemonRevealed);
       if (revealTimer) clearTimeout(revealTimer);
       if (nextTimer) clearTimeout(nextTimer);
+      revealTimersRef.current.forEach((timer) => clearTimeout(timer));
+      revealTimersRef.current.clear();
     };
   }, []);
+
+  useEffect(() => {
+    visiblePokemon.forEach((pokemon) => {
+      if (loadedPokemonIds.has(pokemon.id)) return;
+
+      const image = new window.Image();
+      image.onload = () => {
+        setBreakingPokemonIds((current) => new Set(current).add(pokemon.id));
+        const timer = setTimeout(() => {
+          setLoadedPokemonIds((current) => new Set(current).add(pokemon.id));
+          setBreakingPokemonIds((current) => {
+            const next = new Set(current);
+            next.delete(pokemon.id);
+            return next;
+          });
+          revealTimersRef.current.delete(pokemon.id);
+        }, 800);
+        revealTimersRef.current.set(pokemon.id, timer);
+      };
+      image.src = pokemon.image;
+    });
+  }, [loadedPokemonIds, visiblePokemon]);
 
   return (
     <section id="skills" className="scroll-mt-16" data-section="skills">
@@ -534,7 +570,7 @@ export default function Skills() {
 
       <div className="skills-pokemon-stage">
         <ul role="list" className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:gap-6">
-        {skills.map((skill, index) => (
+        {SKILLS.map((skill, index) => (
           <li
             key={skill.name}
             className={`relative rounded-xl border border-white/10 transition-shadow hover:shadow-md ${
@@ -551,24 +587,56 @@ export default function Skills() {
               logoClassName="skills-card-logo"
             />
 
-            {visiblePokemon[index] && (
+            {(visiblePokemon[index] ||
+              (revealingIndex === index && revealedPokemon[index])) && (
               <div
                 className="skills-pokemon-overlay"
-                aria-label={`Revealed Pokémon: ${visiblePokemon[index].name}`}
+                aria-label={`Revealed Pokémon: ${
+                  visiblePokemon[index]?.name ?? "Poké Ball"
+                }`}
               >
-                <img
-                  src={visiblePokemon[index].image}
-                  alt={visiblePokemon[index].name}
-                  className="skills-pokemon-image"
-                  style={{
-                    '--pokemon-glow':
-                      POKEMON_GLOW_COLORS[visiblePokemon[index].rarity],
-                  } as React.CSSProperties}
-                  draggable={false}
-                />
-                <span className="skills-pokemon-tooltip">
-                  {visiblePokemon[index].name}
-                </span>
+                {visiblePokemon[index] &&
+                loadedPokemonIds.has(visiblePokemon[index].id) ? (
+                  <img
+                    src={visiblePokemon[index].image}
+                    alt={`${visiblePokemon[index].name} reveal`}
+                    className="skills-pokemon-image"
+                    style={{
+                      '--pokemon-glow':
+                        POKEMON_GLOW_COLORS[visiblePokemon[index].rarity],
+                    } as React.CSSProperties}
+                    draggable={false}
+                  />
+                ) : (
+                  <div
+                    className={`skills-pokeball-break ${
+                      visiblePokemon[index] &&
+                      breakingPokemonIds.has(visiblePokemon[index].id)
+                        ? "is-breaking"
+                        : ""
+                    }`}
+                    role="img"
+                    aria-label="Poké Ball"
+                  >
+                    <img
+                      src="/GreatBall.png"
+                      alt=""
+                      className="skills-pokeball-half skills-pokeball-half-left"
+                      draggable={false}
+                    />
+                    <img
+                      src="/GreatBall.png"
+                      alt=""
+                      className="skills-pokeball-half skills-pokeball-half-right"
+                      draggable={false}
+                    />
+                  </div>
+                )}
+                {visiblePokemon[index] && (
+                  <span className="skills-pokemon-tooltip">
+                    {visiblePokemon[index].name}
+                  </span>
+                )}
               </div>
             )}
 
