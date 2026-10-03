@@ -350,7 +350,7 @@ export default function Nav() {
         </div>
 
         <h2 className="text-2xl shiny drop-shadow-[0_0_10px_rgba(206,245,255,0.6)] flex items-center gap-3 text-center lg:text-start">
-          <span className="custom-cursor">Full-Stack Developer</span>
+          <span className="custom-cursor">Senior Full-Stack Developer</span>
         </h2>
 
         <p className="text-md text-muted-foreground text-center lg:text-start">

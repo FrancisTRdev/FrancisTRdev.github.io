@@ -16,7 +16,7 @@ const personSchema = {
   "@type": "Person",
   name: "Francis Tran",
   url: siteUrl,
-  jobTitle: "Full-Stack Developer",
+  jobTitle: "Senior Full-Stack Developer",
   description: defaultDescription,
   alumniOf: "University of St. Thomas",
   sameAs: [
