@@ -638,15 +638,10 @@ export default function Skills() {
                     <img
                       src={fallbackBallImages[index] ?? '/GreatBall.png'}
                       alt=""
-                      className="skills-pokeball-half skills-pokeball-half-left"
+                      className="skills-pokeball"
                       draggable={false}
                     />
-                    <img
-                      src={fallbackBallImages[index] ?? '/GreatBall.png'}
-                      alt=""
-                      className="skills-pokeball-half skills-pokeball-half-right"
-                      draggable={false}
-                    />
+                    <span className="skills-pokeball-sparks" aria-hidden="true" />
                   </div>
                 )}
                 {visiblePokemon[index] && (

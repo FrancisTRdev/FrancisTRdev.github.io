@@ -293,51 +293,75 @@
   width: 78%;
   height: 78%;
   animation: skills-pokeball-arrive 450ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  will-change: opacity, transform;
+  will-change: opacity, transform, filter;
 }
 
-.skills-pokeball-half {
+.skills-pokeball-break::after {
   position: absolute;
-  top: 0;
+  inset: 15%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(147, 197, 253, 0.55) 25%, transparent 70%);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.2);
+}
+
+.skills-pokeball-break::before {
+  position: absolute;
+  inset: 8%;
+  border: 2px solid rgba(191, 219, 254, 0.9);
+  border-radius: 50%;
+  box-shadow:
+    0 0 8px rgba(147, 197, 253, 0.9),
+    0 0 18px rgba(96, 165, 250, 0.7);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.55);
+}
+
+.skills-pokeball-sparks {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.28rem;
+  height: 0.28rem;
+  border-radius: 50%;
+  background: #fef08a;
+  box-shadow:
+    -2.1rem -1.45rem 0 #bae6fd,
+    2rem -1.55rem 0 #fde68a,
+    2.35rem 0.35rem 0 #c4b5fd,
+    1.25rem 1.9rem 0 #bae6fd,
+    -1.4rem 1.8rem 0 #fde68a,
+    -2.3rem 0.35rem 0 #c4b5fd;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.2);
+}
+
+.skills-pokeball {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.skills-pokeball-half-left {
-  left: 0;
-  clip-path: polygon(
-    0 0,
-    100% 0,
-    100% 52%,
-    75% 58%,
-    55% 63%,
-    45% 63%,
-    25% 57%,
-    0 52%
-  );
+.skills-pokeball-break.is-breaking {
+  animation: skills-pokeball-pop 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.skills-pokeball-half-right {
-  right: 0;
-  clip-path: polygon(
-    0 52%,
-    25% 57%,
-    45% 63%,
-    55% 63%,
-    75% 58%,
-    100% 52%,
-    100% 100%,
-    0 100%
-  );
+.skills-pokeball-break.is-breaking::after {
+  animation: skills-pokeball-flash 800ms ease-out both;
 }
 
-.skills-pokeball-break.is-breaking .skills-pokeball-half-left {
-  animation: skills-pokeball-break-left 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.skills-pokeball-break.is-breaking::before {
+  animation: skills-pokeball-ring 800ms ease-out both;
 }
 
-.skills-pokeball-break.is-breaking .skills-pokeball-half-right {
-  animation: skills-pokeball-break-right 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
+.skills-pokeball-break.is-breaking .skills-pokeball-sparks {
+  animation: skills-pokeball-sparks 800ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .skills-pokemon-tooltip {
@@ -504,18 +528,6 @@
   }
 }
 
-@keyframes skills-pokeball-break-left {
-  0% {
-    opacity: 1;
-    transform: translateX(0) rotate(0);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-35%) rotate(-10deg);
-  }
-}
-
 @keyframes skills-pokeball-arrive {
   0% {
     opacity: 0;
@@ -528,15 +540,83 @@
   }
 }
 
-@keyframes skills-pokeball-break-right {
+@keyframes skills-pokeball-pop {
   0% {
     opacity: 1;
-    transform: translateX(0) rotate(0);
+    transform: scale(0.92);
+    filter: brightness(1);
+  }
+
+  18% {
+    transform: scale(1.08);
+  }
+
+  34% {
+    transform: scale(0.98);
+  }
+
+  52% {
+    transform: scale(1.04);
+    filter: brightness(1.35);
   }
 
   100% {
     opacity: 0;
-    transform: translateY(35%) rotate(10deg);
+    transform: scale(1.5);
+    filter: brightness(2.2);
+  }
+}
+
+@keyframes skills-pokeball-flash {
+  0%,
+  38% {
+    opacity: 0;
+    transform: scale(0.2);
+  }
+
+  58% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.8);
+  }
+}
+
+@keyframes skills-pokeball-ring {
+  0%,
+  28% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+
+  48% {
+    opacity: 0.95;
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.65);
+  }
+}
+
+@keyframes skills-pokeball-sparks {
+  0%,
+  30% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.2) rotate(0deg);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.8) rotate(18deg);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.35) rotate(48deg);
   }
 }
 
