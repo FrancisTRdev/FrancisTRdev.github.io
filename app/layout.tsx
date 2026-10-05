@@ -9,7 +9,7 @@ const inter = Inter({ subsets: ["latin"] });
 const siteUrl = "https://francistrdev.github.io";
 const defaultTitle = "Francis Tran";
 const defaultDescription =
-  "Francis Tran is a software engineering student and full-stack developer building modern web apps, open-source products, and AI-powered experiences.";
+  "Francis Tran is a Senior Full-Stack Developer and a Community Curator at DEV!";
 
 const personSchema = {
   "@context": "https://schema.org",
